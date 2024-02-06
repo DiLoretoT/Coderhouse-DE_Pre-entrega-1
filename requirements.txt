@@ -1,9 +1,5 @@
-certifi==2023.11.17
-numpy==1.26.3
+requests==2.31.0
 pandas==2.1.4
-psycopg2==2.9.9
 python-dateutil==2.8.2
 pytz==2023.3.post1
 redshift-connector==2.0.918
-requests==2.31.0
-SQLAlchemy==2.0.25

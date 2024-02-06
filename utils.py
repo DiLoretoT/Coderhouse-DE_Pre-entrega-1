@@ -1,7 +1,6 @@
 import redshift_connector
-from sqlalchemy import create_engine
-from configparser import ConfigParser
 from pathlib import Path
+from configparser import ConfigParser
 
 def read_api_credentials(file_path: Path, section: str) -> dict:
     """

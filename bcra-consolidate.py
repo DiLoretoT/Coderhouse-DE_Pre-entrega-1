@@ -1,12 +1,9 @@
 import requests
 import json
 import pandas as pd
+from datetime import datetime, timedelta
 import pytz
-import redshift_connector
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import create_engine
-from configparser import ConfigParser
-from utils import read_api_credentials, read_config_file, build_conn_string, conn_to_db, get_redshift_connection
+from utils import read_api_credentials, read_config_file, get_redshift_connection, build_conn_string
 
 
 # (old) Opción 1 de autenticación: Leer el archivo creado "config.json" para obtener el api token y autenticar correctamente.
@@ -37,7 +34,7 @@ def consolidate(endpoint, description):
     """
     url = f'https://api.estadisticasbcra.com{endpoint}'
     response = requests.get(url, headers=headers)
-    start = datetime.now(pytz.timezone('America/Buenos_Aires')) - timedelta(month=1)
+    start = datetime.now(pytz.timezone('America/Buenos_Aires')) - timedelta(days=30)
     end = datetime.now(pytz.timezone('America/Buenos_Aires')) - timedelta(days=1)
     
     if response.status_code == 200:         
@@ -48,6 +45,7 @@ def consolidate(endpoint, description):
         df['Date'] = df['Date'].dt.tz_localize('America/Buenos_Aires')        
         df['Concept'] = description        
         filtered_df = df[(df['Date'] >= start) & (df['Date'] <= end)]                  
+        print(filtered_df)
         return filtered_df
                 
     else: 
@@ -98,12 +96,15 @@ try:
     ## Debug Print para asegurar el éxito de la ejecución hasta esta parte
     print("Intentando crear la tabla en el esquema...")
     
+    ## Se agrega esta línea para pruebas durante la preparación del proyecto. 
+    cursor.execute("DROP TABLE IF EXISTS tomasmartindl_coderhouse.bcra;")
+    
     ## En este caso se crea la tabla Date como clave de distribución y de ordenamiento. En un caso en el cual, por ejemplo, las consultas estén más relacionadas con "concept", porque se requiere hacer joins sobre registros por cada concepto, hubiese elegido "concept" como distkey, de estilo de distribución KEY. 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tomasmartindl_coderhouse.bcra(
             date DATE DISTKEY,
-            concept VARCHAR(255),
-            value NUMERIC(18,2)
+            concept VARCHAR(50),
+            value NUMERIC(18,2),
             PRIMARY KEY (date, concept)
         )
         SORTKEY(date);
@@ -126,10 +127,10 @@ finally:
     conn.close()
     print("Conexión cerrada.")
 
-# Inserción de datos de "df_final"
+# Inserción de datos de "df_final". Todavía no finalizado, debo acomodarlo con sqlalchemy
 #df_final.to_sql(
 #    "bcra",
-#    cursor,
+#    ,
 #    schema="tomasmartindl_coderhouse",
 #    if_exists="append",
 #    method="multi",
